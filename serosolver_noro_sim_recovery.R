@@ -21,10 +21,13 @@ library(ggpubr)
 #devtools::load_all(serosolver_wd)
 library(serosolver)
 
+# notes: a "makefile" is needed to run this. I think this si something to do with ensuring the right R packages 
+# are installed.
+
 rm(list = ls())
 
 run_name <- "sim_noro"
-main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus/sim_rec" #"~/Documents/norovirus_test/"
+main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation" #"~/Documents/norovirus_test/"
 chain_wd <- paste0(main_wd,"/chains/",run_name)
 save_wd <- paste0(main_wd,"/figures/chain_plots/")
 
