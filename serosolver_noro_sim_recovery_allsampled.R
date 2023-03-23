@@ -26,7 +26,7 @@ library(serosolver)
 
 rm(list = ls())
 
-run_name <- "sim_noro"
+run_name <- "sim_noro_allsampled"
 main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation" #"~/Documents/norovirus_test/"
 chain_wd <- paste0(main_wd,"/chains/",run_name)
 save_wd <- paste0(main_wd,"/figures/chain_plots/")
@@ -63,7 +63,7 @@ n_indivs <- 250
 n_groups <- 1 ## Leave as 1, can in theory make multiple groups with distinct FOI parameters, but needs extra setup
 n_samps <- 1 ## Number of samples per person
 repeats <- 1 ## Number of repeat measurements per variant/sample combination
-samp_min <- 2009 ## First sample year
+samp_min <- 2008 ## First sample year
 samp_max <- 2012 ## Final sample year
 year_min <- 2000 ## First year of possible circulation (ie. time 0 of the simulation)
 year_max <- 2012 ## Final year of possible circulation
@@ -71,7 +71,7 @@ age_min <- 1 ## Age minimum and maximum in years, simulated from a uniform distr
 age_max <- 10
 
 ## Viruses and times for samples
-sampled_viruses <- c(2000,2002,2006,2009,2012)
+sampled_viruses <- c(2002,2006,2009,2012)
 sampling_times <- seq(samp_min, samp_max, by=1)
 
 ## Create a fake antigenic map -- can put in what you like here
@@ -94,7 +94,7 @@ par_tab[par_tab$names == c("alpha","beta"),c("values")] <- c(1/3,1/3) ## Can als
 ## Just some setup of the parameter table to get parameters vaguely like you showed me
 par_tab$fixed <- 1
 par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"fixed"] <- 0
-par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(3,0.5,0.2,2)
+par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(5,0.5,0.2,2)
 par_tab[par_tab$names %in% c("mu_short","sigma2"),"values"] <- c(0,1)
 
 ## Create some random measurement offsets -- these add a systematic shift to each observed variant. Only those sampled variant years have offsets, the rest are 0
@@ -117,9 +117,10 @@ sim_data <- simulate_data(par_tab=par_tab, group=1, n_indiv=n_indivs,
                      buckets=buckets,
                      strain_isolation_times=strain_isolation_times,
                      measured_strains=sampled_viruses,
-                     sampling_times=sampling_times, nsamps=n_samps, 
+                     sampling_times=sampling_times, 
+                     nsamps=n_samps, 
                      antigenic_map=antigenic_map, 
-                     titre_sensoring=0.2, ## Randomly censor 20% of measurements
+                     titre_sensoring=0.0, ## Randomly censor 20% of measurements
                      age_min=age_min,age_max=age_max,
                      attack_rates=attack_rates, repeats=repeats,
                      mu_indices = NULL, measurement_indices = measurement_indices,
@@ -135,15 +136,17 @@ titre_dat <- titre_dat %>% arrange(individual, samples, virus, run) %>% as.data.
 
 ggplot(titre_dat,aes(x=samples,y=titre,group=samples)) + geom_boxplot() + facet_wrap(~virus)
 
+head(titre_dat)
+titre_dat[titre_dat$individual == 1,]
 
 ## Save titre data
-write_csv(titre_dat, file=paste0(save_wd,"/",run_name,"_titre_data.csv"))
+write_csv(titre_dat, file=paste0(chain_wd,"/",run_name,"_titre_data.csv"))
 ## Save parameter table
-write_csv(par_tab, file=paste0(save_wd,"/",run_name,"_par_tab.csv"))
+write_csv(par_tab, file=paste0(chain_wd,"/",run_name,"_par_tab.csv"))
 ## Save attack rates
-write_csv(sim_data$attack_rates, file=paste0(save_wd,"/",run_name,"_attack_rates.csv"))
+write_csv(sim_data$attack_rates, file=paste0(chain_wd,"/",run_name,"_attack_rates.csv"))
 ## Save infection histories
-write_csv(as.data.frame(sim_data$infection_histories), file=paste0(save_wd,"/",run_name,"_infection_histories.csv"))
+write_csv(as.data.frame(sim_data$infection_histories), file=paste0(chain_wd,"/",run_name,"_infection_histories.csv"))
 
 head(titre_dat)
 table(samp=titre_dat$samples,virus=titre_dat$virus)
@@ -193,7 +196,10 @@ run_time_fast <- Sys.time() - t1
 run_time_fast # 20 mins. 
 
 ## Read in chains for trace plot
+tmp <- "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation/chains/sim_noro"
 chains <- load_mcmc_chains(chain_wd,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
+chains <- load_mcmc_chains(chain_wd,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
+
 pdf(paste0(save_wd,"/",run_name,"_chain.pdf"))
 plot(as.mcmc.list(chains$theta_list_chains))
 dev.off()
