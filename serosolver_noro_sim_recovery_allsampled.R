@@ -94,7 +94,7 @@ par_tab[par_tab$names == c("alpha","beta"),c("values")] <- c(1/3,1/3) ## Can als
 ## Just some setup of the parameter table to get parameters vaguely like you showed me
 par_tab$fixed <- 1
 par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"fixed"] <- 0
-par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(5,0.5,0.2,2)
+par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(3,0.5,0.2,2)
 par_tab[par_tab$names %in% c("mu_short","sigma2"),"values"] <- c(0,1)
 
 ## Create some random measurement offsets -- these add a systematic shift to each observed variant. Only those sampled variant years have offsets, the rest are 0
@@ -197,8 +197,8 @@ run_time_fast # 20 mins.
 
 ## Read in chains for trace plot
 # requires
-tmp <- "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation/chains/sim_noro" # works fine
-chains <- load_mcmc_chains(tmp,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
+#tmp <- "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation/chains/sim_noro" # works fine
+#chains <- load_mcmc_chains(tmp,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
 chains <- load_mcmc_chains(chain_wd,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
 
 pdf(paste0(save_wd,"/",run_name,"_chain.pdf"))
