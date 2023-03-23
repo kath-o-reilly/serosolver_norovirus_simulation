@@ -196,8 +196,9 @@ run_time_fast <- Sys.time() - t1
 run_time_fast # 20 mins. 
 
 ## Read in chains for trace plot
-tmp <- "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation/chains/sim_noro"
-chains <- load_mcmc_chains(chain_wd,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
+# requires
+tmp <- "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation/chains/sim_noro" # works fine
+chains <- load_mcmc_chains(tmp,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
 chains <- load_mcmc_chains(chain_wd,convert_mcmc=TRUE,burnin = mcmc_pars["adaptive_period"],unfixed = TRUE)
 
 pdf(paste0(save_wd,"/",run_name,"_chain.pdf"))
