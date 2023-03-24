@@ -26,10 +26,10 @@ library(serosolver)
 
 rm(list = ls())
 
-run_name <- "sim_noro_allsampled"
+run_name <- "tau_test"
 main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation" #"~/Documents/norovirus_test/"
 chain_wd <- paste0(main_wd,"/chains/",run_name)
-save_wd <- paste0(main_wd,"/figures/chain_plots/")
+save_wd <- paste0(main_wd,"/simdata/",run_name)
 
 if(!dir.exists(save_wd)) dir.create(save_wd,recursive = TRUE)
 if(!dir.exists(chain_wd)) dir.create(chain_wd,recursive = TRUE)
@@ -93,9 +93,9 @@ par_tab[par_tab$names == c("alpha","beta"),c("values")] <- c(1/3,1/3) ## Can als
 
 ## Just some setup of the parameter table to get parameters vaguely like you showed me
 par_tab$fixed <- 1
-par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"fixed"] <- 0
-par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(3,0.5,0.2,2)
-par_tab[par_tab$names %in% c("mu_short","sigma2"),"values"] <- c(0,1)
+par_tab[par_tab$names %in% c("mu","tau","sigma1","error","mu_short"),"fixed"] <- 0  # adding in mu_short
+par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(5,0.2,0.1,2)
+par_tab[par_tab$names %in% c("mu_short","sigma2"),"values"] <- c(1,1)
 
 ## Create some random measurement offsets -- these add a systematic shift to each observed variant. Only those sampled variant years have offsets, the rest are 0
 ## These are unknown parameters to be estimated, assuming the offsets are drawn from ~ norm(0, 1)
@@ -140,13 +140,13 @@ head(titre_dat)
 titre_dat[titre_dat$individual == 1,]
 
 ## Save titre data
-write_csv(titre_dat, file=paste0(chain_wd,"/",run_name,"_titre_data.csv"))
+write_csv(titre_dat, file=paste0(save_wd,"/",run_name,"_titre_data.csv"))
 ## Save parameter table
-write_csv(par_tab, file=paste0(chain_wd,"/",run_name,"_par_tab.csv"))
+write_csv(par_tab, file=paste0(save_wd,"/",run_name,"_par_tab.csv"))
 ## Save attack rates
-write_csv(sim_data$attack_rates, file=paste0(chain_wd,"/",run_name,"_attack_rates.csv"))
+write_csv(sim_data$attack_rates, file=paste0(save_wd,"/",run_name,"_attack_rates.csv"))
 ## Save infection histories
-write_csv(as.data.frame(sim_data$infection_histories), file=paste0(chain_wd,"/",run_name,"_infection_histories.csv"))
+write_csv(as.data.frame(sim_data$infection_histories), file=paste0(save_wd,"/",run_name,"_infection_histories.csv"))
 
 head(titre_dat)
 table(samp=titre_dat$samples,virus=titre_dat$virus)
@@ -155,6 +155,13 @@ f <- create_posterior_func(par_tab,titre_dat,antigenic_map=antigenic_map,strain_
                            version=prior_version,solve_likelihood=TRUE,n_alive=NULL,
                            measurement_indices_by_time=measurement_indices ## NULL
                            )
+
+# check which parameters we are estimating
+par_tab[par_tab$fixed==0,]
+
+# turn some off
+par_tab$values[par_tab$names == "tau"] <- 0.0
+par_tab$fixed[par_tab$names == "tau"] <- 1
 
 ## Time runs and use dopar to run multiple chains in parallel
 t1 <- Sys.time()
@@ -213,16 +220,22 @@ inf_chain <- chains$inf_chain
 #summary stats
 library(coda)
 list_chains1 <- chains[[1]]
-tmp <- summary(chain[,c("mu","sigma1",
-                         "tau",
+# nore mu_s is mu_short
+tmp <- summary(chain[,c("mu","tau",
+                        "sigma1",
+                         "mu_short",#"sigma2",
                          #"wane",
                          "error","total_infections",
                          "lnlike","prior_prob")])
+median(chain[,c("lnlike")],)
+quantile(chain[,c("tau")],c(0.5,0.02,0.975))
 tmp
 
 # how well do we re-estimate parameters?
-df2 <- data.frame(variable=c("mu","tau","sigma1","error"),value=c(3,0.5,0.2,2))
-p1 <- list_chains1 %>% select(mu,tau,sigma1,error) %>% tidyr::gather(variable, value) %>%
+# this should be coded properly...
+df2 <- data.frame(variable=par_tab$names[par_tab$fixed==0],value=par_tab$values[par_tab$fixed==0])
+#df2 <- data.frame(variable=c("mu","tau","sigma1","mu_short","error"),value=c(5,0.5,0.2,1,1,2))
+p1 <- list_chains1 %>% select(mu,tau,sigma1,mu_short,error) %>% tidyr::gather(variable, value) %>%
   ggplot(aes(value)) + geom_histogram(bins = 51) +
   geom_vline(data=df2,aes(xintercept=value),col="red") +
   facet_wrap(~variable, scales = 'free_x') 
@@ -242,7 +255,7 @@ n_alive <- get_n_alive_group(titre_dat,strain_isolation_times)
 ## Plot attack rates
 n_inf <- sim_data$infection_histories %>% colSums()
 true_ar <- data.frame(j=strain_isolation_times,group=1,AR=n_inf/n_alive[1,])
-p_ar <- plot_attack_rates(inf_chain, titre_dat, 2000:2013,
+p_ar <- plot_attack_rates(inf_chain, titre_dat, year_min:year_max,
                           pad_chain=FALSE,plot_den=TRUE,n_alive = n_alive,
                           true_ar=true_ar,
                           prior_pars = c("prior_version"=2,"alpha"=1,"beta"=1))
