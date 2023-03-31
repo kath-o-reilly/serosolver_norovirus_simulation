@@ -4,6 +4,8 @@
 ## Date: 03 March 2023
 ## Summary: simulates some serosurvey data and fits serosolver
 
+
+
 library(ggplot2)
 library(coda)
 library(plyr)
@@ -16,6 +18,11 @@ library(dplyr)
 library(readr)
 library(viridis)
 library(ggpubr)
+#library(devtools)
+
+library(misc3d)
+library(plot3D)
+library(rgl)
 
 #serosolver_wd <- "~/Documents/GitHub/serosolver/"
 #devtools::load_all(serosolver_wd)
@@ -154,6 +161,9 @@ f <- create_posterior_func(par_tab,titre_dat,antigenic_map=antigenic_map,strain_
                            )
 
 ## Time runs and use dopar to run multiple chains in parallel
+#library(data.table)
+
+
 t1 <- Sys.time()
 filenames <- paste0(chain_wd, "/",run_name, "_",1:n_chains)
 if(rerun){

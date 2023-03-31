@@ -1,0 +1,27 @@
+# packages that require install
+
+This was needed on my home laptop, but not my work laptop. I do not know why...
+
+ash, bayesplot, bdsmatrix, bitops, BMA, brotli, cellranger,
+collapse, conflicted, countrycode, denstrip, DEoptimR, Deriv, deSolve, dfidx,
+distributional, dotCall64, dtplyr, Ecdat, Ecfun, evd, fda, fds, fields, FNN,
+gargle, geojsonsf, geometries, geos, geosphere, GGally, ggridges, googledrive,
+googlesheets4, gsl, gtools, haven, hdrcde, HKprocess, hmer, ids, igraph, INLA,
+inline, IRdisplay, IRkernel, janitor, jsonify, kernlab, ks, labelled, leafem,
+leaflet, leaflet.providers, leafsync, leaps, lhs, libgeos, locfit, lwgeom,
+markdown, matrixStats, maxLik, mclust, mcmc, MCMCpack, mcmcplots, misc3d,
+miscTools, mlogit, mnormt, modelr, multicool, oai, orthopolynom, owidR, pbdZMQ,
+pcaPP, pdist, PerformanceAnalytics, pixmap, plm, plot3D, posterior, pracma, qs,
+Quandl, R2jags misc3d, plot3D, Racmacs, RcppEnsmallen, RcppProgress,
+readxl, reprex, rgl, riingo, rmarchingcubes, rnaturalearth, rnaturalearthdata,
+runjags, shape, shinyFiles, shinyjs, sn, socialmixr, SpatialEpi, spData, spdep,
+splancs, stars, texreg, tidyquant, tidyterra, tidyverse, tmap, tmaptools,
+widgetframe, wpp2015, wpp2017, XML
+
+
+
+Manual dowloand
+INLA
+devtools::install_github("acorg/Racmacs")
+tidyquant - install manually
+https://www.xquartz.org/ required for misc3d, plot3D, rgl
