@@ -33,7 +33,7 @@ library(serosolver)
 
 rm(list = ls())
 
-run_name <- "sim_noro"
+run_name <- "data_no_xr"
 main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation" #"~/Documents/norovirus_test/"
 chain_wd <- paste0(main_wd,"/chains/",run_name)
 save_wd <- paste0(main_wd,"/figures/chain_plots/")
@@ -70,12 +70,12 @@ n_indivs <- 250
 n_groups <- 1 ## Leave as 1, can in theory make multiple groups with distinct FOI parameters, but needs extra setup
 n_samps <- 1 ## Number of samples per person
 repeats <- 1 ## Number of repeat measurements per variant/sample combination
-samp_min <- 2009 ## First sample year
+samp_min <- 2008 ## First sample year
 samp_max <- 2012 ## Final sample year
 year_min <- 2000 ## First year of possible circulation (ie. time 0 of the simulation)
 year_max <- 2012 ## Final year of possible circulation
 age_min <- 1 ## Age minimum and maximum in years, simulated from a uniform distribution
-age_max <- 10
+age_max <- 7
 
 ## Viruses and times for samples
 sampled_viruses <- c(2000,2002,2006,2009,2012)
