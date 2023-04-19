@@ -4,8 +4,6 @@
 ## Date: 03 March 2023
 ## Summary: simulates some serosurvey data and fits serosolver
 
-
-
 library(ggplot2)
 library(coda)
 library(plyr)
@@ -33,7 +31,7 @@ library(serosolver)
 
 rm(list = ls())
 
-run_name <- "data_no_xr"
+run_name <- "data_test_ac" #"sim_noro_allsampled" #
 main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation" #"~/Documents/norovirus_test/"
 chain_wd <- paste0(main_wd,"/chains/",run_name)
 save_wd <- paste0(main_wd,"/figures/chain_plots/")
@@ -43,7 +41,7 @@ if(!dir.exists(chain_wd)) dir.create(chain_wd,recursive = TRUE)
 
 buckets <- 1 ## Ignore
 prior_version <- 2 ## Which prior on the infection histories to use? Prior version 2 is generally preferred
-n_chains <- 3 ## Number of MCMC chains to run
+n_chains <- 5 ## Number of MCMC chains to run
 
 rerun <- TRUE ## Set to FALSE if you just want to load in previously run chains
 
@@ -78,16 +76,34 @@ age_min <- 1 ## Age minimum and maximum in years, simulated from a uniform distr
 age_max <- 7
 
 ## Viruses and times for samples
-sampled_viruses <- c(2000,2002,2006,2009,2012)
+sampled_viruses <- c(2002,2006,2009,2012)
 sampling_times <- seq(samp_min, samp_max, by=1)
 
-## Create a fake antigenic map -- can put in what you like here
-antigenic_coords <- data.frame(Strain=c(2000,2002,2006,2009,2012),X=c(0,0.5,3,3.5,4),Y=c(0,2,1,3,4))
-antigenic_map <- generate_antigenic_map_flexible(antigenic_coords,
-                                                 year_max=2013,year_min=2000,spar = 0.001)
+if(run_name == "data_test_ac"){
+  antigenic_mapB <- read_csv("antigenic_map_noro_inferred_jump.csv")
+  oo <- match(sampled_viruses,antigenic_mapB$inf_times)
+  antigenic_coords <- antigenic_mapB[oo,]
+  names(antigenic_coords) <- c("X","Y","Strain")
+  antigenic_map <- (read_csv("antigenic_map_noro_inferred_temporal.csv")) #
+}
+if(run_name == "data_test_ac2"){
+  antigenic_mapB <- read_csv("antigenic_map_noro_inferred_jump.csv")
+  oo <- match(sampled_viruses,antigenic_mapB$inf_times)
+  antigenic_coords <- antigenic_mapB[oo,]
+  names(antigenic_coords) <- c("X","Y","Strain")
+  antigenic_map <- antigenic_mapB #as.data.frame(read_csv("antigenic_map_noro_inferred_temporal.csv")) #
+}
+if(run_name != "data_test_ac2" & run_name != "data_test_ac"){
+  ## Create a fake antigenic map -- can put in what you like here
+  antigenic_coords <- data.frame(Strain=c(2000,2002,2006,2009,2012),X=c(0,0.5,3,3.5,4),Y=c(0,2,1,3,4))
+  antigenic_map <- generate_antigenic_map_flexible(antigenic_coords,
+                                                   year_max=2013,year_min=2000,spar = 0.001)
+}
 ggplot(data=antigenic_map,aes(x=x_coord,y=y_coord)) + geom_line() +
-  geom_point(data=antigenic_coords,aes(x=X,y=Y)) +
-  geom_text(data=antigenic_coords,aes(x=X+0.2,y=Y,label=Strain))
+  geom_text(aes(x=x_coord+0.5,y=y_coord,label=inf_times)) +
+  geom_point(data=antigenic_coords,aes(x=X,y=Y),col="blue") +
+  geom_text(data=antigenic_coords,aes(x=X+0.5,y=Y,label=Strain),col="blue")
+
 #ggplot()
 
 strain_isolation_times <- antigenic_map$inf_times
@@ -100,9 +116,9 @@ par_tab[par_tab$names == c("alpha","beta"),c("values")] <- c(1/3,1/3) ## Can als
 
 ## Just some setup of the parameter table to get parameters vaguely like you showed me
 par_tab$fixed <- 1
-par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"fixed"] <- 0
-par_tab[par_tab$names %in% c("mu","tau","sigma1","error"),"values"] <- c(3,0.5,0.2,2)
-par_tab[par_tab$names %in% c("mu_short","sigma2"),"values"] <- c(0,1)
+par_tab[par_tab$names %in% c("mu","mu_short","wane","sigma1","sigma2","tau","error"),"fixed"] <- 0
+par_tab[par_tab$names %in% c("mu","mu_short","wane","sigma1","sigma2","tau","error"),"values"] <- c(2,5,0.4,0.1,0.01,0.5,1)
+
 
 ## Create some random measurement offsets -- these add a systematic shift to each observed variant. Only those sampled variant years have offsets, the rest are 0
 ## These are unknown parameters to be estimated, assuming the offsets are drawn from ~ norm(0, 1)
@@ -163,13 +179,14 @@ f <- create_posterior_func(par_tab,titre_dat,antigenic_map=antigenic_map,strain_
 ## Time runs and use dopar to run multiple chains in parallel
 #library(data.table)
 
+# check which parameters we are estimating
+par_tab[par_tab$fixed==0,]
 
 t1 <- Sys.time()
 filenames <- paste0(chain_wd, "/",run_name, "_",1:n_chains)
 if(rerun){
   res <- foreach(x = filenames, .packages = c('serosolver','data.table','plyr',"dplyr")) %dopar% {
       devtools::load_all(save_wd)
-      
       index <- 1
       lik <- -Inf
       inf_hist_correct <- 1
@@ -182,12 +199,10 @@ if(rerun){
           lik <- sum(y[[1]])
           index <- index + 1
       }
-      
       write.csv(start_tab, paste0(x, "_start_tab.csv"))
       write.csv(start_inf, paste0(x, "_start_inf_hist.csv"))
       write.csv(antigenic_map, paste0(x, "_antigenic_map.csv"))
       write.csv(titre_dat, paste0(x, "_titre_dat.csv"))
-      
       res <- serosolver::run_MCMC(start_tab, titre_dat, antigenic_map, 
                                   start_inf_hist=start_inf,filename=x,
                                   CREATE_POSTERIOR_FUNC=create_posterior_func, 
