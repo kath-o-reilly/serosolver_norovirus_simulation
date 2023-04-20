@@ -84,7 +84,7 @@ if(run_name == "data_test_ac"){
   oo <- match(sampled_viruses,antigenic_mapB$inf_times)
   antigenic_coords <- antigenic_mapB[oo,]
   names(antigenic_coords) <- c("X","Y","Strain")
-  antigenic_map <- (read_csv("antigenic_map_noro_inferred_temporal.csv")) #
+  antigenic_map <- (read_csv("antigenic_map_noro_inferred_trueequal.csv")) #
 }
 if(run_name == "data_test_ac2"){
   antigenic_mapB <- read_csv("antigenic_map_noro_inferred_jump.csv")
