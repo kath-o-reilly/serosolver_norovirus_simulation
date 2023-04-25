@@ -22,16 +22,21 @@ library(misc3d)
 library(plot3D)
 library(rgl)
 
-#serosolver_wd <- "~/Documents/GitHub/serosolver/"
-#devtools::load_all(serosolver_wd)
-library(serosolver)
+# make sure I have the right branch installed...checking simulate_data is the way to go.
+
+serosolver_wd <- "~/Documents/GitHub/serosolver/"
+setwd(serosolver_wd)
+devtools::load_all(serosolver_wd)
+
+#devtools::install_github("seroanalytics/serosolver",ref="master",force = TRUE)
+#library(serosolver)
 
 # notes: a "makefile" is needed to run this. I think this si something to do with ensuring the right R packages 
 # are installed.
 
 rm(list = ls())
 
-run_name <- "data_test_ac" #"sim_noro_allsampled" #
+run_name <- "data_test_ac2" #"sim_noro_allsampled" #
 main_wd <-  "/Users/lsh1603970/GitHub/serosolver_norovirus_simulation" #"~/Documents/norovirus_test/"
 chain_wd <- paste0(main_wd,"/chains/",run_name)
 save_wd <- paste0(main_wd,"/figures/chain_plots/")
@@ -79,40 +84,50 @@ age_max <- 7
 sampled_viruses <- c(2002,2006,2009,2012)
 sampling_times <- seq(samp_min, samp_max, by=1)
 
-if(run_name == "data_test_ac"){
+if(run_name == "data_test_ac1"){
   antigenic_mapB <- read_csv("antigenic_map_noro_inferred_jump.csv")
   oo <- match(sampled_viruses,antigenic_mapB$inf_times)
   antigenic_coords <- antigenic_mapB[oo,]
   names(antigenic_coords) <- c("X","Y","Strain")
   antigenic_map <- (read_csv("antigenic_map_noro_inferred_trueequal.csv")) #
+  antigenic_map <- antigenic_map[order(antigenic_map$inf_times),] # ESSENTIAL!!
 }
 if(run_name == "data_test_ac2"){
   antigenic_mapB <- read_csv("antigenic_map_noro_inferred_jump.csv")
   oo <- match(sampled_viruses,antigenic_mapB$inf_times)
   antigenic_coords <- antigenic_mapB[oo,]
   names(antigenic_coords) <- c("X","Y","Strain")
-  antigenic_map <- antigenic_mapB #as.data.frame(read_csv("antigenic_map_noro_inferred_temporal.csv")) #
+  antigenic_map <- as.data.frame(read_csv("antigenic_map_noro_inferred_temporal.csv")) #
+  antigenic_map <- antigenic_map[order(antigenic_map$inf_times),]
 }
-if(run_name != "data_test_ac2" & run_name != "data_test_ac"){
+if(run_name != "data_test_ac2" & run_name != "data_test_ac1"){
   ## Create a fake antigenic map -- can put in what you like here
   antigenic_coords <- data.frame(Strain=c(2000,2002,2006,2009,2012),X=c(0,0.5,3,3.5,4),Y=c(0,2,1,3,4))
   antigenic_map <- generate_antigenic_map_flexible(antigenic_coords,
                                                    year_max=2013,year_min=2000,spar = 0.001)
 }
+
 ggplot(data=antigenic_map,aes(x=x_coord,y=y_coord)) + geom_line() +
   geom_text(aes(x=x_coord+0.5,y=y_coord,label=inf_times)) +
   geom_point(data=antigenic_coords,aes(x=X,y=Y),col="blue") +
   geom_text(data=antigenic_coords,aes(x=X+0.5,y=Y,label=Strain),col="blue")
 
+#ggplot(antigenic_map,aes(x=inf_times,y=x_coord)) + geom_point()
+
 #ggplot()
 
 strain_isolation_times <- antigenic_map$inf_times
+# check these are time ordered
+sum(strain_isolation_times == strain_isolation_times[order(strain_isolation_times)]) == length(strain_isolation_times)
+
 n_times <- length(strain_isolation_times)
 
 ## Set up parameter table
 par_tab <- read.csv("par_tab_base.csv",stringsAsFactors=FALSE)
 par_tab <- par_tab[par_tab$names != "phi",]
-par_tab[par_tab$names == c("alpha","beta"),c("values")] <- c(1/3,1/3) ## Can also try c(1,1), or something informative. Just the parameters of a beta distribution which acts as the prior on the per-time attack rate.
+par_tab[par_tab$names == c("alpha","beta"),c("values")] <- c(1,2) ## Can also try c(1,1), or something informative. Just the parameters of a beta distribution which acts as the prior on the per-time attack rate.
+
+#hist(rbeta(1000,1,2))
 
 ## Just some setup of the parameter table to get parameters vaguely like you showed me
 par_tab$fixed <- 1
@@ -239,8 +254,9 @@ tmp <- summary(chain[,c("mu","sigma1",
 tmp
 
 # how well do we re-estimate parameters?
-df2 <- data.frame(variable=c("mu","tau","sigma1","error"),value=c(3,0.5,0.2,2))
-p1 <- list_chains1 %>% select(mu,tau,sigma1,error) %>% tidyr::gather(variable, value) %>%
+df2 <- data.frame(variable=c("mu","mu_short","tau","sigma1","sigma2","wane","error"),
+                  value=c(2,5,0.4,0.01,0.5,0.1,1))
+p1 <- list_chains1 %>% select(mu,mu_short,tau,sigma1,sigma2,wane,error) %>% tidyr::gather(variable, value) %>%
   ggplot(aes(value)) + geom_histogram(bins = 51) +
   geom_vline(data=df2,aes(xintercept=value),col="red") +
   facet_wrap(~variable, scales = 'free_x') 
